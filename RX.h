@@ -80,6 +80,7 @@
 // Setting the maximum motor power. Suitable for TX transmitters without endpoint setting. Settings (0-255)
 #define MAX_FORWARD_MOTOR1  255
 #define MAX_REVERSE_MOTOR1  255
+
 #define MAX_FORWARD_MOTOR2  255
 #define MAX_REVERSE_MOTOR2  255
 
