@@ -50,13 +50,13 @@ void setup(void)
 #if defined(MOTOR1)
   pinMode(pins_motor1[0], OUTPUT);
   pinMode(pins_motor1[1], OUTPUT);
-  setPWMPrescaler(pins_motor1[0], PWM_MOTOR1); // Setting the motor 1 frequency
+  setPWMPrescaler(pins_motor1[0], PWM_TIMER0_5_6); // Setting the motor 1 frequency
 #endif
 
 #if defined(MOTOR2)
   pinMode(pins_motor2[0], OUTPUT);
   pinMode(pins_motor2[1], OUTPUT);
-  setPWMPrescaler(pins_motor2[0], PWM_MOTOR2); // Setting the motor 2 frequency
+  setPWMPrescaler(pins_motor2[0], PWM_TIMER2_3_11); // Setting the motor 2 frequency
 #endif
 
 #if defined(SERVO_8CH) || defined(SERVO_7CH_MOTOR1) || defined(SERVO_7CH_MOTOR2) || defined(SERVO_6CH_MOTOR12)

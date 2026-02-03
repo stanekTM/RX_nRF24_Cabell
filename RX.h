@@ -37,7 +37,7 @@
 // 64 = 976Hz(default)
 // 8 = 7812Hz
 // 1 = 62500Hz
-#define PWM_MOTOR1  64
+#define PWM_TIMER0_5_6  64
 
 // Pin D9 and D10 (16-bit Timer/Counter 1, Servo library)
 // 1024 = 30Hz
@@ -45,7 +45,7 @@
 // 64 = 488Hz(default)
 // 8 = 3906Hz
 // 1 = 31250Hz
-//#define PWM_MOTOR2  256
+//#define PWM_TIMER1_9_10  64
 
 // Pin D3 and D11 (8-bit Timer/Counter 2, ServoTimer2, Tone library)
 // 1024 = 30Hz
@@ -55,7 +55,7 @@
 // 32 = 976Hz
 // 8 = 3906Hz
 // 1 = 31250Hz
-#define PWM_MOTOR2  64
+#define PWM_TIMER2_3_11  64
 
 // Pin D0(RX) (328PB 16-bit Timer/Counter 3)
 // 1024 = 30Hz
@@ -63,7 +63,7 @@
 // 64 = 488Hz(default)
 // 8 = 3906Hz
 // 1 = 31250Hz
-//#define PWM_MOTOR1  64
+//#define PWM_TIMER3_0  64
 
 // Pin D1(TX) and D2 (328PB 16-bit Timer/Counter 4)
 // 1024 = 30Hz
@@ -71,7 +71,7 @@
 // 64 = 488Hz(default)
 // 8 = 3906Hz
 // 1 = 31250Hz
-//#define PWM_MOTOR2  64
+//#define PWM_TIMER4_1_2  64
 
 // Setting the reaction of the motor to be rotated after the lever has been moved. Settings (0-255)
 #define ACCELERATE_MOTOR1  0
