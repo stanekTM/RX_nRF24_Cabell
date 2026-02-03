@@ -6,24 +6,66 @@ Includes nRF24L01+ transceiver and ATmega328P/PB processor for PWM motor control
 The code is Arduino.
 
 The motor driver IC is based on MX1208, MX1508, MX1515, MX1616, MX1919 and others similar, which uses 4x PWM input control signals.
-The option to adjust the brake is included in the code.
 
 I recommend reducing the number of channels as much as possible based on what your model requires.
 Fewer channels will use a smaller packet size, which improves transmission reliability (fewer bytes sent means less opportunity for errors).
 
+In the file "RX.h", uncomment (define) only one output option that combines motors, servos and pins (e.g. uncomment only output for 1 motor, no output for servos).
+Another option is to set the frequency, acceleration or braking of each motor.
+
 ## Arduino pins
 ```
+define MOTOR_A:
+D5  - motor A/1
+D6  - motor A/2
+
+define MOTOR_B:
+D3  - motor B/1
+D11 - motor B/2
+
+define SERVO_8CH:
 D2  - servo 1
 D3  - servo 2
 D4  - servo 3
+D5  - servo 4
+D6  - servo 5
+D7  - servo 6
+D8  - servo 7
+D9  - servo 8
+
+define SERVO_7CH_MOTOR_A:
+D2  - servo 1
+D3  - servo 2
+D4  - servo 3
+D5  - motor A/1
+D6  - motor A/2
 D7  - servo 4
 D8  - servo 5
-D11 - servo 6
+D9  - servo 6
+D10 - servo 7
 
-D5  - pwm1/Motor A
-D6  - pwm2/Motor A
-D9  - pwm3/Motor B
-D10 - pwm4/Motor B
+define SERVO_7CH_MOTOR_B:
+D2  - servo 1
+D3  - motor B/1
+D4  - servo 2
+D5  - servo 3
+D6  - servo 4
+D7  - servo 5
+D8  - servo 6
+D9  - servo 7
+D11 - motor B/2
+
+define SERVO_6CH_MOTOR_AB:
+D2  - servo 1
+D3  - motor B/1
+D4  - servo 2
+D5  - motor A/1
+D6  - motor A/2
+D7  - servo 3
+D8  - servo 4
+D9  - servo 5
+D10 - servo 6
+D11 - motor B/2
 
 D12 - bind button
 D13 - LED
