@@ -4,7 +4,7 @@
   **********************************
   RC receiver from my repository https://github.com/stanekTM/RX_Cabell_Xch_Motor_Servo
   
-  Includes nRF24L01+ transceiver and ATmega328P/PB processor for PWM motor control or servo outputs and telemetry.
+  Hardware includes nRF24L01+ transceiver, ATmega328P/PB processor and motor driver.
   
   Works with RC transmitters:
   OpenAVRc      https://github.com/Ingwie/OpenAVRc_Dev

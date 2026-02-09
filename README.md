@@ -1,11 +1,13 @@
-# RC receiver with "Cabell" protocol
-... works with [**OpenAVRc**](https://github.com/Ingwie/OpenAVRc_Dev) and [**Multiprotocol**](https://github.com/pascallanger/DIY-Multiprotocol-TX-Module).
+## RC receiver with "Cabell" protocol
+This is a modified firmware. The code is Arduino.
 
-This is a modified firmware.
-Includes nRF24L01+ transceiver and ATmega328P/PB processor for PWM motor control or servo outputs and telemetry.
-The code is Arduino.
+Hardware includes nRF24L01+ transceiver, ATmega328P/PB processor and motor driver.
 
 The motor driver IC is based on MX1208, MX1508, MX1515, MX1616, MX1919 and others similar, which uses 4x PWM input control signals.
+
+### Works with RC transmitters
+[**OpenAVRc**](https://github.com/Ingwie/OpenAVRc_Dev)
+[**Multiprotocol**](https://github.com/pascallanger/DIY-Multiprotocol-TX-Module).
 
 I recommend reducing the number of channels as much as possible based on what your model requires.
 Fewer channels will use a smaller packet size, which improves transmission reliability (fewer bytes sent means less opportunity for errors).
@@ -13,7 +15,7 @@ Fewer channels will use a smaller packet size, which improves transmission relia
 In the file "RX.h", uncomment (define) only one output option that combines motors, servos and pins (e.g. uncomment only output for 1 motor, no output for servos).
 Another option is to set the frequency, acceleration or braking of each motor.
 
-## Arduino pins
+### Arduino pins
 ```
 define MOTOR1:
 D5  - motor 1/1
@@ -82,14 +84,14 @@ A4 - MISO
 A5 - IRQ
 ```
 
-## The Protocol
+### The Protocol
 The protocol used is named CABELL_V3 (the third version, but the first version publicly released). It is a FHSS protocol using the NRF24L01+ 2.4 GHz transceiver. 45 channels are used from 2.403 through 2.447 GHz. The reason for using 45 channels is to keep operation within the overlap area between the 2.4 GHz ISM band (governed in the USA by FCC part 15) and the HAM portion of the band (governed in the USA by FCC part 97). This allows part 15 compliant use of the protocol, while allowing licensed amateur radio operators to operate under the less restrictive part 97 rules if desired.
 
 Each transmitter is assigned a random ID (this is handled by the Multiprotocol) based on this ID one of 362880 possible channel sequences is used for the frequency hopping. The hopping pattern algorithm ensures that each hop moves at least 9 channels from the previous channel. One packet is sent every 3 - 4 milliseconds (depending on options chosen), changing channels with each packet. All 45 channels are used equally.
 
 The protocol also assigns each model a different number so one model setting does not control the wrong model. The protocol can distinguish up to 255 different models, but be aware that the Multiprotocol transmitter software only does 16.
 
-## Binding receiver
+### Binding receiver
 **There are several ways the receiver enters the binding mode**
 * A new Arduino will start in bind mode automatically. Only an Arduino that was flashed for the first time (not previously bound) does this. Re-flashing the software will retain the old binding unless the EEPROM has been erased.
 * Erasing the EEPROM on the Arduino will make it start up in bind mode just like a new Arduino. The Arduino sketch [here](https://github.com/soligen2010/Reset_EEPROM) will erase the EEPROM.
@@ -103,7 +105,7 @@ The protocol also assigns each model a different number so one model setting doe
 * When the pairing is successful, the LED of the receiver will flash slowly.
 * Switch off the transmitter from bind mode and restart the receiver without bind mode.
 
-## Unbinding Receiver
+### Unbinding Receiver
 In order to un-bind a receiver using the transmitter, a model bound to the receiver must be configured in the transmitter.
 
 * Navigate to the model "SETUP" page.
@@ -112,7 +114,7 @@ In order to un-bind a receiver using the transmitter, a model bound to the recei
 
 When the receiver is restarted, it will start in bind mode.
 
-## Fail-safe
+### Fail-safe
 * In the event of a failure, the channels are set to a fail-safe value, either the default (channels in the middle) or the value set by the user.
 * When the receiver is switched on, the default safety values are activated and all channels are in the middle.
 * The receiver also dis-arms if an RC signal is lost for 3 seconds.
@@ -136,24 +138,24 @@ When fail-safe set mode is entered, the LED is turned on and stays on until the 
 
 Before flying a model, always test the fail-safe values after they have been set.
 
-## Telemetry
+### Telemetry
 When the sub-protocol is set to "V3 Telm", the receiver sends telemetry packets back to the transmitter. Three values are returned, a simulated RSSI, and the voltages on the Arduino pins A6 and A7 as telemetry values A1 and A2.
 
-#### RSSI
+### RSSI
 Because the NRF24L01 does not have an RSSI feature, the RSSI value is simulated based on the packet rate. The base of the RSSI calculation is the packet success rate from 0 to 100. This value is re-calculated approximately every 1/2 second (every 152 expected packets). This success percentage is then modified in real time based on packets being missed, so that if multiple packets in a row are missed the RSSI value drops without having to wait for the next re-calculation of the packet rate.
 
 In practice, the packet rate seems to stay high for a long range, then drop off quickly as the receiver moves out of range. Typically, the telemetry lost warning happens before the RSSI low warning.
 
 The RSSI class encapsulates the RSSI calculations. If you are so inclined, feel free play with the calculation. If anyone finds an algorithm that works better, please contribute it.
 
-#### A1, A2 analog values
+### A1, A2 analog values
 Analog values are read on Arduino pins A6 and A7. Running on a, Arduino with VCC of 5V, only values up to 5V can be read. **A value on A6 or A7 that exceeds the Arduino VCC will cause damage**, so care must be taken to ensure the voltage is in a safe range.
 
 The values from pins A6 and A7 come to the transmitter with OpenTX or OpenAVRc as telemetry values A1 and A2. You can use either of these to read battery voltage or the output of current sensor. The following article explains how to input battery voltage to A2 on an Frsky receiver using a voltage divider. The same method can be used to read battery voltage on this receiver. [Lipo voltage monitoring with FrSky D-Receivers without sensors](https://olex.biz/2014/03/lipo-voltage-monitoring-with-frsky-d-receivers-without-sensors/).
 
 The values sent are 0 - 255 corresponding to 0V - 5V. This will need to be re-scaled to the actual voltage (or current, etc.) in the transmitter on the telemetry  configuration screen.
 
-## Packet Format
+### Packet Format
 ```
 typedef struct
 {
@@ -193,7 +195,7 @@ RxTxPacket_t;
 ```
 Each 12 bits in payloadValue is the value of one channel. Valid values are in the range 1000 to 2000. The values are stored big endian. Using channel reduction reduces the number of bytes sent, thereby trimming off the end of the payloadValue array.
 
-## License Info
+### License Info
 Copyright 2017 - 2019 by Dennis Cabell (KE8FZX)
 To use this software, you must adhere to the license terms described below, and assume all responsibility for the use of the software. The user is responsible for all consequences or damage that may result from using this software. The user is responsible for ensuring that the hardware used to run this software complies with local regulations and that any radio signal generated from use of this software is legal for that user to generate. The author(s) of this software assume no liability whatsoever. The author(s) of this software is not responsible for legal or civil consequences of using this software, including, but not limited to, any damages cause by lost control of a vehicle using this software. If this software is copied or modified, this disclaimer must accompany all copies.
 
