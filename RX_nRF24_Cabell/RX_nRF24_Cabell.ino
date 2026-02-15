@@ -2,7 +2,7 @@
   *******************************************************************************************************************
   RC receiver with "Cabell" protocol
   **********************************
-  RC receiver from my repository https://github.com/stanekTM/RX_Cabell_Xch_Motor_Servo
+  RC receiver from my repository https://github.com/stanekTM/RX_nRF24_Cabell
   
   Hardware includes nRF24L01+ transceiver, ATmega328P/PB processor and motor driver.
   
@@ -36,8 +36,10 @@
   along with RC_RX_CABELL_V3_FHSS.  If not, see http://www.gnu.org/licenses.
 */
 
+#include <EEPROM.h>
+#include <Servo.h>     // v1.2.2
+#include <DigitalIO.h> // v1.0.1
 #include "RX.h"
-#include "Pins.h"
 #include "PWM.h"
 
 //*********************************************************************************************************************
@@ -46,23 +48,10 @@
 void setup(void)
 {
   //Serial.begin(9600);
-
-#if defined(MOTOR1)
-  pinMode(pins_motor1[0], OUTPUT);
-  pinMode(pins_motor1[1], OUTPUT);
-  setPWMPrescaler(pins_motor1[0], PWM_976HZ_TIMER0_5_6_DEFAULT); // Setting the motor 1 frequency
-#endif
-
-#if defined(MOTOR2)
-  pinMode(pins_motor2[0], OUTPUT);
-  pinMode(pins_motor2[1], OUTPUT);
-  setPWMPrescaler(pins_motor2[0], PWM_488HZ_TIMER2_3_11_DEFAULT); // Setting the motor 2 frequency
-#endif
-
-#if defined(SERVO_8CH) || defined(SERVO_7CH_MOTOR1) || defined(SERVO_7CH_MOTOR2) || defined(SERVO_6CH_MOTOR12)
-  attach_servo_pins();
-#endif
-
+  
+  servo_setup();
+  motor_setup();
+  
   pinMode(PIN_BUTTON_BIND, INPUT_PULLUP);
   
   pinMode(PIN_LED, OUTPUT);

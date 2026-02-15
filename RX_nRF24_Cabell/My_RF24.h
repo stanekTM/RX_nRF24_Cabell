@@ -9,12 +9,6 @@
   version 2 as published by the Free Software Foundation.
 */
 
-/**
- * @file RF24.h
- *
- * Class declaration for RF24 and helper enums
- */
-
 #ifndef __My_RF24_h__
 #define __My_RF24_h__
 

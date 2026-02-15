@@ -25,171 +25,6 @@
 */
 
 #include "RX.h"
-#include "Pins.h"
-#include "My_RF24.h"
-#include "My_nRF24L01.h"
-#include "RSSI.h"
-#include "RX_TX_Util.h"
-#include <EEPROM.h>
-#include <Servo.h>     // v1.2.2
-#include <DigitalIO.h> // v1.0.1
-
-My_RF24 radio(PIN_CE, PIN_CSN);
-
-RSSI rssi;
-
-uint8_t radioChannel[RF_CHANNELS];
-uint8_t currentChannel = MIN_RF_CHANNEL; // Initializes the channel sequence
-
-uint8_t radioConfigRegisterForTX = 0;
-uint8_t radioConfigRegisterForRX_IRQ_Masked = 0;
-uint8_t radioConfigRegisterForRX_IRQ_On = 0;
-
-bool bindMode = false; // When true send bind command to cause receiver to bind enter bind mode
-uint8_t currentModel = 0;
-uint64_t radioPipeID;
-uint64_t radioNormalRxPipeID;
-
-const int currentModelEEPROMAddress = 0;
-const int radioPipeEEPROMAddress = currentModelEEPROMAddress + sizeof(currentModel);
-const int softRebindFlagEEPROMAddress = radioPipeEEPROMAddress + sizeof(radioNormalRxPipeID);
-const int failSafeChannelValuesEEPROMAddress = softRebindFlagEEPROMAddress + sizeof(uint8_t); // uint8_t is the sifr of the rebind flag
-
-uint16_t failSafeChannelValues[MAX_RC_CHANNELS];
-
-bool failSafeMode = false;
-bool failSafeNoPulses = false;
-
-bool packetMissed = false;
-uint32_t packetInterval = DEFAULT_PACKET_INTERVAL;
-
-volatile bool packetReady = false;
-
-int16_t analogValue[2] = {0, 0};
-
-bool telemetryEnabled = false;
-uint16_t initialTelemetrySkipPackets = 0;
-
-uint16_t rc_channel_val[MAX_RC_CHANNELS];
-
-//*********************************************************************************************************************
-// Attach servo pins
-//*********************************************************************************************************************
-#if defined(SERVO_8CH) || defined(SERVO_7CH_MOTOR1) || defined(SERVO_7CH_MOTOR2) || defined(SERVO_6CH_MOTOR12)
-Servo servo[SERVO_CHANNELS]; // Create servo object
-
-void attach_servo_pins()
-{
-  for (byte i = 0; i < SERVO_CHANNELS; i++)
-  {
-    servo[i].attach(pins_servo[i]);
-  }
-}
-#endif
-
-//*********************************************************************************************************************
-// Servo control
-//*********************************************************************************************************************
-void servo_control()
-{
-#if defined(SERVO_8CH)
-  servo[0].writeMicroseconds(rc_channel_val[0]);
-  servo[1].writeMicroseconds(rc_channel_val[1]);
-  servo[2].writeMicroseconds(rc_channel_val[2]);
-  servo[3].writeMicroseconds(rc_channel_val[3]);
-  servo[4].writeMicroseconds(rc_channel_val[4]);
-  servo[5].writeMicroseconds(rc_channel_val[5]);
-  servo[6].writeMicroseconds(rc_channel_val[6]);
-  servo[7].writeMicroseconds(rc_channel_val[7]);
-#endif
-
-#if defined(SERVO_7CH_MOTOR1)
-  servo[0].writeMicroseconds(rc_channel_val[1]);
-  servo[1].writeMicroseconds(rc_channel_val[2]);
-  servo[2].writeMicroseconds(rc_channel_val[3]);
-  servo[3].writeMicroseconds(rc_channel_val[4]);
-  servo[4].writeMicroseconds(rc_channel_val[5]);
-  servo[5].writeMicroseconds(rc_channel_val[6]);
-  servo[6].writeMicroseconds(rc_channel_val[7]);
-#endif
-
-#if defined(SERVO_7CH_MOTOR2)
-  servo[0].writeMicroseconds(rc_channel_val[0]);
-  servo[1].writeMicroseconds(rc_channel_val[2]);
-  servo[2].writeMicroseconds(rc_channel_val[3]);
-  servo[3].writeMicroseconds(rc_channel_val[4]);
-  servo[4].writeMicroseconds(rc_channel_val[5]);
-  servo[5].writeMicroseconds(rc_channel_val[6]);
-  servo[6].writeMicroseconds(rc_channel_val[7]);
-#endif
-
-#if defined(SERVO_6CH_MOTOR12)
-  servo[0].writeMicroseconds(rc_channel_val[2]);
-  servo[1].writeMicroseconds(rc_channel_val[3]);
-  servo[2].writeMicroseconds(rc_channel_val[4]);
-  servo[3].writeMicroseconds(rc_channel_val[5]);
-  servo[4].writeMicroseconds(rc_channel_val[6]);
-  servo[5].writeMicroseconds(rc_channel_val[7]);
-#endif
-}
-
-//*********************************************************************************************************************
-// Motor control
-//*********************************************************************************************************************
-void motor_control()
-{
-  int motor1_val = 0, motor2_val = 0;
-
-#if defined(MOTOR1)
-  // Forward motor 1
-  if (rc_channel_val[0] > MID_CONTROL_VAL + DEAD_ZONE)
-  {
-    motor1_val = map(rc_channel_val[0], MID_CONTROL_VAL + DEAD_ZONE, MAX_CONTROL_VAL, ACCELERATE_MOTOR1, MAX_FORWARD_MOTOR1);
-    motor1_val = constrain(motor1_val, ACCELERATE_MOTOR1, MAX_FORWARD_MOTOR1);
-    analogWrite(pins_motor1[1], motor1_val); 
-    digitalWrite(pins_motor1[0], LOW);
-  }
-  // Reverse motor 1
-  else if (rc_channel_val[0] < MID_CONTROL_VAL - DEAD_ZONE)
-  {
-    motor1_val = map(rc_channel_val[0], MID_CONTROL_VAL - DEAD_ZONE, MIN_CONTROL_VAL, ACCELERATE_MOTOR1, MAX_REVERSE_MOTOR1);
-    motor1_val = constrain(motor1_val, ACCELERATE_MOTOR1, MAX_REVERSE_MOTOR1);
-    analogWrite(pins_motor1[0], motor1_val);
-    digitalWrite(pins_motor1[1], LOW);
-  }
-  else
-  {
-    analogWrite(pins_motor1[0], BRAKE_MOTOR1);
-    analogWrite(pins_motor1[1], BRAKE_MOTOR1);
-  }
-  //Serial.println(motor1_val);
-#endif
-
-#if defined(MOTOR2)
-  // Forward motor 2
-  if (rc_channel_val[1] > MID_CONTROL_VAL + DEAD_ZONE)
-  {
-    motor2_val = map(rc_channel_val[1], MID_CONTROL_VAL + DEAD_ZONE, MAX_CONTROL_VAL, ACCELERATE_MOTOR2, MAX_FORWARD_MOTOR2);
-    motor2_val = constrain(motor2_val, ACCELERATE_MOTOR2, MAX_FORWARD_MOTOR2);
-    analogWrite(pins_motor2[1], motor2_val);
-    digitalWrite(pins_motor2[0], LOW);
-  }
-  // Reverse motor 2
-  else if (rc_channel_val[1] < MID_CONTROL_VAL - DEAD_ZONE)
-  {
-    motor2_val = map(rc_channel_val[1], MID_CONTROL_VAL - DEAD_ZONE, MIN_CONTROL_VAL, ACCELERATE_MOTOR2, MAX_REVERSE_MOTOR2);
-    motor2_val = constrain(motor2_val, ACCELERATE_MOTOR2, MAX_REVERSE_MOTOR2);
-    analogWrite(pins_motor2[0], motor2_val);
-    digitalWrite(pins_motor2[1], LOW);
-  }
-  else
-  {
-    analogWrite(pins_motor2[0], BRAKE_MOTOR2);
-    analogWrite(pins_motor2[1], BRAKE_MOTOR2);
-  }
-  //Serial.println(motor1_val);
-#endif
-}
 
 //*********************************************************************************************************************
 // Output RC channels
@@ -493,9 +328,9 @@ void outputFailSafeValues(bool callOutputChannels)
 {
   loadFailSafeDefaultValues();
   
-  for (byte i = 0; i < MAX_RC_CHANNELS; i++)
+  for (byte i = 0; i < RC_CHANNELS; i++)
   {
-    rc_channel_val[i] = failSafeChannelValues[i];
+    rc_packet[i] = failSafeChannelValues[i];
   }
   
   if (!failSafeMode)
@@ -581,9 +416,9 @@ void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], RxTxPacket_t :: R
 //*********************************************************************************************************************
 void setFailSafeDefaultValues()
 {
-  uint16_t defaultFailSafeValues[MAX_RC_CHANNELS];
+  uint16_t defaultFailSafeValues[RC_CHANNELS];
   
-  for (int i = 0; i < MAX_RC_CHANNELS; i++)
+  for (byte i = 0; i < RC_CHANNELS; i++)
   {
     defaultFailSafeValues[i] = MID_CONTROL_VAL;
   }
@@ -598,7 +433,7 @@ void loadFailSafeDefaultValues()
 {
   EEPROM.get(failSafeChannelValuesEEPROMAddress, failSafeChannelValues);
   
-  for (int i = 0; i < MAX_RC_CHANNELS; i++)
+  for (byte i = 0; i < RC_CHANNELS; i++)
   {
     // Make sure failsafe values are valid
     if (failSafeChannelValues[i] < MIN_CONTROL_VAL || failSafeChannelValues[i] > MAX_CONTROL_VAL)
@@ -613,7 +448,7 @@ void loadFailSafeDefaultValues()
 //*********************************************************************************************************************
 void setFailSafeValues(uint16_t newFailsafeValues[])
 {
-  for (int i = 0; i < MAX_RC_CHANNELS; i++)
+  for (byte i = 0; i < RC_CHANNELS; i++)
   {
     failSafeChannelValues[i] = newFailsafeValues[i];
   }
@@ -672,11 +507,13 @@ bool readAndProcessPacket()
   telemetryEnabled = (RxPacket.RxMode == RxTxPacket_t :: RxMode_t :: normalWithTelemetry) ? true : false;
   
   bool packet_rx = false;
-  uint16_t tempHoldValues[MAX_RC_CHANNELS];
-  uint8_t channelReduction = constrain((RxPacket.option & OPTION_MASK_RF_CHANNEL_REDUCTION), 0, MAX_RC_CHANNELS - MIN_RC_CHANNELS); // Must be at least 4 channels, so cap at 12
+  
+  uint16_t tempHoldValues[RC_CHANNELS];
+  
+  uint8_t channelReduction = constrain((RxPacket.option & OPTION_MASK_RF_CHANNEL_REDUCTION), 0, RC_CHANNELS - MIN_RC_CHANNELS); // Must be at least 4 channels, so cap at 12
   uint8_t packetSize = sizeof(RxPacket) - ((((channelReduction - (channelReduction % 2)) / 2)) * 3); // Reduce 3 bytes per 2 channels, but not last channel if it is odd
   uint8_t maxPayloadValueIndex = sizeof(RxPacket.payloadValue) - (sizeof(RxPacket) - packetSize);
-  uint8_t channelsRecieved = MAX_RC_CHANNELS - channelReduction;
+  uint8_t channelsRecieved = RC_CHANNELS - channelReduction;
   
   // Putting this after setNextRadioChannel will lag by one telemetry packet, but by doing this the telemetry can be sent sooner, improving the timing
   if (telemetryEnabled)
@@ -702,9 +539,9 @@ bool readAndProcessPacket()
   // If packet is good, copy the channel values
   if (packet_rx)
   {
-    for (int i = 0 ; i < MAX_RC_CHANNELS; i++)
+    for (byte i = 0 ; i < RC_CHANNELS; i++)
     {
-      rc_channel_val[i] = (i < channelsRecieved) ? tempHoldValues[i] : MID_CONTROL_VAL; // Use the mid value for channels not received
+      rc_packet[i] = (i < channelsRecieved) ? tempHoldValues[i] : MID_CONTROL_VAL; // Use the mid value for channels not received
     }
   }
   

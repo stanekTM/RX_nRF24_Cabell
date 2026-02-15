@@ -1,3 +1,4 @@
+#include <stdint.h>
 /*
   Copyright 2017 by Dennis Cabell
   KE8FZX
@@ -29,63 +30,22 @@
 
 #include <Arduino.h>
 #include "My_RF24.h"
+#include "Pins.h"
+#include "RSSI.h"
 
-// Setting the reaction of the motor to be rotated after the lever has been moved. Settings (0-255)
-#define ACCELERATE_MOTOR1  0
-#define ACCELERATE_MOTOR2  0
+My_RF24 radio(PIN_CE, PIN_CSN);
 
-// Setting the maximum motor power. Suitable for TX transmitters without endpoint setting. Settings (0-255)
-#define MAX_FORWARD_MOTOR1  255
-#define MAX_REVERSE_MOTOR1  255
+RSSI rssi;
 
-#define MAX_FORWARD_MOTOR2  255
-#define MAX_REVERSE_MOTOR2  255
+#define RC_CHANNELS  16      // The maximum number of RC channels that can be sent in one packet
+#define MIN_RC_CHANNELS   4  // The minimum number of RC channels that must be included in a packet, the number of channels cannot be reduced any further than this
+#define RF_PAYLOAD_BYTES  24 // 12 bits per value * 16 channels
 
-// Brake setting, no brake 0, maximum brake 255. Settings (0-255)
-#define BRAKE_MOTOR1  0
-#define BRAKE_MOTOR2  0
-
-// Setting the dead zone of poor quality joysticks TX for the motor controller
-#define DEAD_ZONE        15
+uint16_t rc_packet[RC_CHANNELS];
 
 #define MIN_CONTROL_VAL  1000
-#define MID_CONTROL_VAL  ((MIN_CONTROL_VAL + MAX_CONTROL_VAL) / 2)
+#define MID_CONTROL_VAL  1500
 #define MAX_CONTROL_VAL  2000
-
-//*********************************************************************************************************************
-// Uncomment only one output option that combines motors, servos and pins.
-// (e.g. uncomment only output for 1 motor, no output for servos)
-//*********************************************************************************************************************
-//#define MOTOR1
-//#define MOTOR2
-//#define SERVO_8CH
-//#define SERVO_7CH_MOTOR1
-//#define SERVO_7CH_MOTOR2
-#define SERVO_6CH_MOTOR12
-
-#if defined(SERVO_8CH)
-  #define SERVO_CHANNELS  8
-#endif
-
-#if defined(SERVO_7CH_MOTOR1)
-  #define SERVO_CHANNELS  7
-  #define MOTOR1
-#endif
-
-#if defined(SERVO_7CH_MOTOR2)
-  #define SERVO_CHANNELS  7
-  #define MOTOR2
-#endif
-
-#if defined(SERVO_6CH_MOTOR12)
-  #define SERVO_CHANNELS  6
-  #define MOTOR1
-  #define MOTOR2
-#endif
-
-#define MAX_RC_CHANNELS   16 // The maximum number of RC channels that can be sent in one packet
-#define MIN_RC_CHANNELS   4  // The minimum number of channels that must be included in a packet, the number of channels cannot be reduced any further than this
-#define RF_PAYLOAD_BYTES  24 // 12 bits per value * 16 channels
 
 #define BIND_RF_ADDR      0xA4B7C123F7LL
 
@@ -135,12 +95,40 @@ typedef struct
   uint8_t  checkSum_MSB; // Checksum most significant byte
   uint8_t  payloadValue[RF_PAYLOAD_BYTES] = {0}; // 12 bits per channel value, unsigned
 }
-RxTxPacket_t;   
+RxTxPacket_t;
 
+uint8_t radioChannel[RF_CHANNELS];
+uint8_t currentChannel = MIN_RF_CHANNEL; // Initializes the channel sequence
 
-void attach_servo_pins();
-void servo_control();
-void motor_control();
+uint8_t radioConfigRegisterForTX = 0;
+uint8_t radioConfigRegisterForRX_IRQ_Masked = 0;
+uint8_t radioConfigRegisterForRX_IRQ_On = 0;
+
+bool bindMode = false; // When true send bind command to cause receiver to bind enter bind mode
+uint8_t currentModel = 0;
+uint64_t radioPipeID;
+uint64_t radioNormalRxPipeID;
+
+const int currentModelEEPROMAddress = 0;
+const int radioPipeEEPROMAddress = currentModelEEPROMAddress + sizeof(currentModel);
+const int softRebindFlagEEPROMAddress = radioPipeEEPROMAddress + sizeof(radioNormalRxPipeID);
+const int failSafeChannelValuesEEPROMAddress = softRebindFlagEEPROMAddress + sizeof(uint8_t); // uint8_t is the sifr of the rebind flag
+
+uint16_t failSafeChannelValues[RC_CHANNELS];
+
+bool failSafeMode = false;
+bool failSafeNoPulses = false;
+
+bool packetMissed = false;
+uint32_t packetInterval = DEFAULT_PACKET_INTERVAL;
+
+volatile bool packetReady = false;
+
+int16_t analogValue[2] = {0, 0};
+
+bool telemetryEnabled = false;
+uint16_t initialTelemetrySkipPackets = 0;
+
 void output_rc_channels();
 void ADC_Processing();
 void setupReciever();

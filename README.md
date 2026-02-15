@@ -12,62 +12,19 @@ and [**Multiprotocol**](https://github.com/pascallanger/DIY-Multiprotocol-TX-Mod
 I recommend reducing the number of channels as much as possible based on what your model requires.
 Fewer channels will use a smaller packet size, which improves transmission reliability (fewer bytes sent means less opportunity for errors).
 
-In the file "RX.h", uncomment (define) only one output option that combines motors, servos and pins (e.g. uncomment only output for 1 motor, no output for servos).
-Another option is to set the frequency, acceleration or braking of each motor.
+In the file "Config.h", uncomment (define) only one output option that combines motors, servos and pins.
 
 ### Arduino pins
 ```
-define MOTOR1:
-D5  - motor 1/1
-D6  - motor 1/2
-
-define MOTOR2:
-D3  - motor 2/1
-D11 - motor 2/2
-
-define SERVO_8CH:
 D2  - servo 1
-D3  - servo 2
+D3  - servo 2 - motor 1/1
 D4  - servo 3
-D5  - servo 4
-D6  - servo 5
+D5  - servo 4 - motor 2/1
+D6  - servo 5 - motor 2/2
 D7  - servo 6
 D8  - servo 7
 D9  - servo 8
-
-define SERVO_7CH_MOTOR1:
-D2  - servo 1
-D3  - servo 2
-D4  - servo 3
-D5  - motor 1/1
-D6  - motor 1/2
-D7  - servo 4
-D8  - servo 5
-D9  - servo 6
-D10 - servo 7
-
-define SERVO_7CH_MOTOR2:
-D2  - servo 1
-D3  - motor 2/1
-D4  - servo 2
-D5  - servo 3
-D6  - servo 4
-D7  - servo 5
-D8  - servo 6
-D9  - servo 7
-D11 - motor 2/2
-
-define SERVO_6CH_MOTOR12:
-D2  - servo 1
-D3  - motor 2/1
-D4  - servo 2
-D5  - motor 1/1
-D6  - motor 1/2
-D7  - servo 3
-D8  - servo 4
-D9  - servo 5
-D10 - servo 6
-D11 - motor 2/2
+D11           - motor 1/2
 
 D12 - bind button
 D13 - LED

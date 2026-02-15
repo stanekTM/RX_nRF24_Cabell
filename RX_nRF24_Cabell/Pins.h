@@ -1,34 +1,9 @@
-/*
-  Copyright 2017 by Dennis Cabell
-  KE8FZX
-  
-  To use this software, you must adhere to the license terms described below, and assume all responsibility for the use
-  of the software.  The user is responsible for all consequences or damage that may result from using this software.
-  The user is responsible for ensuring that the hardware used to run this software complies with local regulations and that 
-  any radio signal generated from use of this software is legal for that user to generate.  The author(s) of this software 
-  assume no liability whatsoever.  The author(s) of this software is not responsible for legal or civil consequences of 
-  using this software, including, but not limited to, any damages cause by lost control of a vehicle using this software.  
-  If this software is copied or modified, this disclaimer must accompany all copies.
-  
-  This project is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  
-  RC_RX_CABELL_V3_FHSS is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with RC_RX_CABELL_V3_FHSS.  If not, see http://www.gnu.org/licenses.
-*/
 
 #ifndef __Pins_h__
 #define __Pins_h__
 
 #include <Arduino.h>
-#include "RX.h"
+#include "Config.h"
 
 // ATmega328P/PB pins overview
 // PD0 - D0   PWM  328PB
@@ -63,32 +38,32 @@
 
 // PWM pins for motor 1 (possible combination, max. 2)
 #if defined(MOTOR1)
-const byte pins_motor1[] = {5, 6};
+  const byte pins_motor1[2] = {3, 11};
 #endif
 
 // PWM pins for motor 2 (possible combination, max. 2)
 #if defined(MOTOR2)
-const byte pins_motor2[] = {3, 11};
+  const byte pins_motor2[2] = {5, 6};
 #endif
 
 // Pins for servos (possible combination, max. 8)
 #if defined(SERVO_8CH)
-const byte pins_servo[] = {2, 3, 4, 5, 6, 7, 8, 9};
+  const byte pins_servo[8] = {2, 3, 4, 5, 6, 7, 8, 9};
 #endif
 
 // Pins for servos (possible combination, max. 7)
 #if defined(SERVO_7CH_MOTOR1)
-const byte pins_servo[] = {2, 3, 4, 7, 8, 9, 10};
+  const byte pins_servo[7] = {2, 4, 5, 6, 7, 8, 9};
 #endif
 
 // Pins for servos (possible combination, max. 7)
 #if defined(SERVO_7CH_MOTOR2)
-const byte pins_servo[] = {2, 4, 5, 6, 7, 8, 9};
+  const byte pins_servo[7] = {2, 3, 4, 7, 8, 9, 10};
 #endif
 
 // Pins for servos (possible combination, max. 6)
-#if defined(SERVO_6CH_MOTOR12)
-const byte pins_servo[] = {2, 4, 7, 8, 9, 10};
+#if defined(SERVO_6CH_MOTOR1_2)
+  const byte pins_servo[6] = {2, 4, 7, 8, 9, 10};
 #endif
 
 #define PIN_BUTTON_BIND        12

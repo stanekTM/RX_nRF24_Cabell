@@ -1,9 +1,4 @@
 /*
-  Copied from https://github.com/nRF24/RF24 library and changed to streamline
-  operations specific to this application
-*/
-
-/*
   Copyright (c) 2007 Stefan Engelke <mbox@stefanengelke.de>
   Portions Copyright (C) 2011 Greg Copeland
   

@@ -9,11 +9,6 @@
   version 2 as published by the Free Software Foundation.
 */
 
-/*
-  spaniakos <spaniakos@gmail.com>
-  Added __ARDUINO_X86__ support
-*/
-
 #ifndef __My_RF24_Config_h__
 #define __My_RF24_Config_h__
 
