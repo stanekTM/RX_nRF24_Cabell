@@ -24,7 +24,7 @@
   Setting the motor reaction point. Prevents initial rotor magnetic resistance
   REACTION_MOTOR1, REACTION_MOTOR2  0 to 255
   
-  Setting the maximum motor power. Suitable for RC transmitters without endpoint setting
+  Setting the maximum motor power
   MAX_FORWARD_MOTOR1, MAX_REVERSE_MOTOR1, MAX_FORWARD_MOTOR2, MAX_REVERSE_MOTOR2  0 to 255
   
   Brake setting, no brake 0, maximum brake 255

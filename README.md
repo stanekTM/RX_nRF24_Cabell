@@ -14,7 +14,7 @@ and [**Multiprotocol TX**](https://github.com/pascallanger/DIY-Multiprotocol-TX-
 * Setting the number of servo channels
 * Setting the PWM prescaler according to the requirements and limitations of the timers/counters. Details in the "PWM" file
 * Setting the motor reaction point. Prevents initial rotor magnetic resistance
-* Setting the maximum motor power. Suitable for RC transmitters without endpoint setting
+* Setting the maximum motor power
 * Brake setting
 
 ### Arduino pins
