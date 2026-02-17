@@ -46,7 +46,7 @@
   const byte pins_motor2[2] = {9, 10};
 #endif
 
-// PWM pins PB for motor 2
+// PWM pins for motor 2 ATmega328PB
 #if defined(MOTOR2PB)
   const byte pins_motor2PB[2] = {1, 2};
 #endif
@@ -72,32 +72,32 @@
   const byte pins_servo[8] = {0, 4, 5, 6, 7, 8, 9, 10};
 #endif
 
-#define PIN_BUTTON_BIND        12
-#define PIN_LED                13
+#define PIN_BUTTON_BIND       12
+#define PIN_LED               13
 
-#define PIN_RX_BATT_A1         A6
-#define PIN_RX_BATT_A2         A7
+#define PIN_RX_BATT_A1        A6
+#define PIN_RX_BATT_A2        A7
 
 // Pins for nRF24L01+
-#define PIN_CE                 A0
-#define PIN_CSN                A1
+#define PIN_CE                A0
+#define PIN_CSN               A1
 
 // Software SPI https://nrf24.github.io/RF24/md_docs_2arduino.html
-//          SCK                A2
-//          MOSI               A3
-//          MISO               A4
+//          SCK               A2
+//          MOSI              A3
+//          MISO              A4
 
-// Configuring pin A5 for radio IRQ 
-#define RADIO_IRQ_PIN          A5
-#define RADIO_IRQ_PIN_bit      5 // PC5
-#define RADIO_IRQ_port         PORTC
-#define RADIO_IRQ_ipr          PINC
-#define RADIO_IRQ_ddr          DDRC
-#define RADIO_IRQ_PIN_MASK     _BV(RADIO_IRQ_PIN_bit)
-#define RADIO_IRQ_SET_INPUT    RADIO_IRQ_ddr &= ~RADIO_IRQ_PIN_MASK
-#define RADIO_IRQ_SET_OUTPUT   RADIO_IRQ_ddr |=  RADIO_IRQ_PIN_MASK
-#define RADIO_IRQ_SET_PULLUP   RADIO_IRQ_port |= RADIO_IRQ_PIN_MASK
-#define IS_RADIO_IRQ_on        ((RADIO_IRQ_ipr & RADIO_IRQ_PIN_MASK) == 0x00)
+// Configuring pin A5 for radio IRQ
+#define RADIO_IRQ_PIN         A5
+#define RADIO_IRQ_PIN_bit     5 // PC5
+#define RADIO_IRQ_port        PORTC
+#define RADIO_IRQ_ipr         PINC
+#define RADIO_IRQ_ddr         DDRC
+#define RADIO_IRQ_PIN_MASK    _BV(RADIO_IRQ_PIN_bit)
+#define RADIO_IRQ_SET_INPUT   RADIO_IRQ_ddr &= ~RADIO_IRQ_PIN_MASK
+#define RADIO_IRQ_SET_OUTPUT  RADIO_IRQ_ddr |=  RADIO_IRQ_PIN_MASK
+#define RADIO_IRQ_SET_PULLUP  RADIO_IRQ_port |= RADIO_IRQ_PIN_MASK
+#define IS_RADIO_IRQ_on       ((RADIO_IRQ_ipr & RADIO_IRQ_PIN_MASK) == 0x00)
 
 #endif // End __Pins_h__
  
