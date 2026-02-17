@@ -365,7 +365,7 @@ void unbindReciever()
   {
     digitalWrite(PIN_LED, ledState);
     ledState = !ledState;
-    delay(250); // Fast LED flash
+    delay(100);
   }  
 }
 
@@ -386,6 +386,7 @@ void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], RxTxPacket_t :: R
     EEPROM.put(currentModelEEPROMAddress, modelNum);
     radioNormalRxPipeID = newRadioPipeID;
     EEPROM.put(radioPipeEEPROMAddress, radioNormalRxPipeID);
+
     digitalWrite(PIN_LED, LOW); // Turn off LED to indicate successful bind
     
     if (RxMode == RxTxPacket_t :: RxMode_t :: bindFalesafeNoPulse)
@@ -406,7 +407,7 @@ void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], RxTxPacket_t :: R
     {
       digitalWrite(PIN_LED, ledState);
       ledState = !ledState;
-      delay(2000); // Slow flash
+      delay(1000);
     }
   }
 }
@@ -464,9 +465,9 @@ bool validateChecksum(RxTxPacket_t const& packet, uint8_t maxPayloadValueIndex)
   // Caculate checksum and validate
   uint16_t packetSum = packet.modelNum + packet.option + packet.RxMode + packet.reserved;
   
-  for (int i = 0; i < maxPayloadValueIndex; i++)
+  for (byte i = 0; i < maxPayloadValueIndex; i++)
   {
-    packetSum = packetSum +  packet.payloadValue[i];
+    packetSum = packetSum + packet.payloadValue[i];
   }
   
   if (packetSum != ((((uint16_t)packet.checkSum_MSB) << 8) + (uint16_t)packet.checkSum_LSB))
@@ -494,10 +495,11 @@ bool readAndProcessPacket()
   {
     currentChannel = tx_channel;
   }
+
+  // Also sends telemetry if in telemetry mode. Doing this as soon as possible to keep timing as tight as possible
+  // False indicates that packet was not missed
+  setNextRadioChannel(false);
   
-  setNextRadioChannel(false); // Also sends telemetry if in telemetry mode. Doing this as soon as possible to keep timing as tight as possible
-  //                             False indicates that packet was not missed
-                              
   // Remove 8th bit from RxMode because this is a toggle bit that is not included in the checksum
   // This toggle with each xmit so consecutive payloads are not identical. This is a work around for a reported bug in clone NRF24L01 chips that mis-took this case for a re-transmit of the same packet.
   uint8_t* p = reinterpret_cast<uint8_t*>(&RxPacket.RxMode);
@@ -505,10 +507,6 @@ bool readAndProcessPacket()
   
   // Putting this after setNextRadioChannel will lag by one telemetry packet, but by doing this the telemetry can be sent sooner, improving the timing
   telemetryEnabled = (RxPacket.RxMode == RxTxPacket_t :: RxMode_t :: normalWithTelemetry) ? true : false;
-  
-  bool packet_rx = false;
-  
-  uint16_t tempHoldValues[RC_CHANNELS];
   
   uint8_t channelReduction = constrain((RxPacket.option & OPTION_MASK_RF_CHANNEL_REDUCTION), 0, RC_CHANNELS - MIN_RC_CHANNELS); // Must be at least 4 channels, so cap at 12
   uint8_t packetSize = sizeof(RxPacket) - ((((channelReduction - (channelReduction % 2)) / 2)) * 3); // Reduce 3 bytes per 2 channels, but not last channel if it is odd
@@ -526,7 +524,11 @@ bool readAndProcessPacket()
     packetInterval = DEFAULT_PACKET_INTERVAL;
   }
   
+  bool packet_rx = false;
+  
   packet_rx = validateChecksum(RxPacket, maxPayloadValueIndex);
+  
+  uint16_t tempHoldValues[RC_CHANNELS];
   
   if (packet_rx)
   {
@@ -539,7 +541,7 @@ bool readAndProcessPacket()
   // If packet is good, copy the channel values
   if (packet_rx)
   {
-    for (byte i = 0 ; i < RC_CHANNELS; i++)
+    for (byte i = 0; i < RC_CHANNELS; i++)
     {
       rc_packet[i] = (i < channelsRecieved) ? tempHoldValues[i] : MID_CONTROL_VAL; // Use the mid value for channels not received
     }
@@ -638,7 +640,7 @@ bool decodeChannelValues(RxTxPacket_t const& RxPacket, uint8_t channelsRecieved,
   int payloadIndex = 0;
   
   // Decode the 12 bit numbers to temp array
-  for (int i = 0; i < channelsRecieved; i++)
+  for (byte i = 0; i < channelsRecieved; i++)
   {
     tempHoldValues[i]  = RxPacket.payloadValue[payloadIndex];
     payloadIndex++;

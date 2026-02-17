@@ -36,34 +36,40 @@
 // ADC6   -    A6
 // ADC7   -    A7
 
-// PWM pins for motor 1 (possible combination, max. 2)
+// PWM pins for motor 1
 #if defined(MOTOR1)
   const byte pins_motor1[2] = {3, 11};
 #endif
 
-// PWM pins for motor 2 (possible combination, max. 2)
+// PWM pins for motor 2
 #if defined(MOTOR2)
-  const byte pins_motor2[2] = {5, 6};
+  const byte pins_motor2[2] = {9, 10};
+#endif
+
+// PWM pins PB for motor 2
+#if defined(MOTOR2PB)
+  const byte pins_motor2PB[2] = {1, 2};
+#endif
+
+// PWM pins for motor 1 and 2
+#if defined(MIX_TANK_MOTOR1_2)
+  const byte pins_motor1[2] = {3, 11};
+  const byte pins_motor2[2] = {9, 10};
+#endif
+
+// Pins for servos (possible combination, max. 12)
+#if defined(SERVO_12CH)
+  const byte pins_servo[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+#endif
+
+// Pins for servos (possible combination, max. 10)
+#if defined(SERVO_10CH_MOTOR1)
+  const byte pins_servo[10] = {0, 1, 2, 4, 5, 6, 7, 8, 9, 10};
 #endif
 
 // Pins for servos (possible combination, max. 8)
-#if defined(SERVO_8CH)
-  const byte pins_servo[8] = {2, 3, 4, 5, 6, 7, 8, 9};
-#endif
-
-// Pins for servos (possible combination, max. 7)
-#if defined(SERVO_7CH_MOTOR1)
-  const byte pins_servo[7] = {2, 4, 5, 6, 7, 8, 9};
-#endif
-
-// Pins for servos (possible combination, max. 7)
-#if defined(SERVO_7CH_MOTOR2)
-  const byte pins_servo[7] = {2, 3, 4, 7, 8, 9, 10};
-#endif
-
-// Pins for servos (possible combination, max. 6)
-#if defined(SERVO_6CH_MOTOR1_2)
-  const byte pins_servo[6] = {2, 4, 7, 8, 9, 10};
+#if defined(SERVO_8CH_MOTOR1_2PB)
+  const byte pins_servo[8] = {0, 4, 5, 6, 7, 8, 9, 10};
 #endif
 
 #define PIN_BUTTON_BIND        12

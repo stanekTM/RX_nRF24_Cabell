@@ -7,8 +7,8 @@
   Hardware includes nRF24L01+ transceiver, ATmega328P/PB processor and motor driver.
   
   Works with RC transmitters:
-  OpenAVRc      https://github.com/Ingwie/OpenAVRc_Dev
-  Multiprotocol https://github.com/pascallanger/DIY-Multiprotocol-TX-Module
+  OpenAVRc         https://github.com/Ingwie/OpenAVRc_Dev
+  Multiprotocol TX https://github.com/pascallanger/DIY-Multiprotocol-TX-Module
   *******************************************************************************************************************
   
   Copyright 2017 by Dennis Cabell

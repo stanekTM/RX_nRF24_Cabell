@@ -13,7 +13,23 @@ void motor_setup()
 #if defined(MOTOR2)
   pinMode(pins_motor2[0], OUTPUT);
   pinMode(pins_motor2[1], OUTPUT);
-  set_PWM_prescaler(pins_motor2[0], PRESCALER_TIMER0_5_6);
+  set_PWM_prescaler(pins_motor2[0], PRESCALER_TIMER1_9_10);
+#endif
+
+#if defined(MOTOR2PB)
+  pinMode(pins_motor2PB[0], OUTPUT);
+  pinMode(pins_motor2PB[1], OUTPUT);
+  set_PWM_prescaler(pins_motor2PB[0], PRESCALER_TIMER4_1_2);
+#endif
+
+#if defined(MIX_TANK_MOTOR1_2)
+  pinMode(pins_motor1[0], OUTPUT);
+  pinMode(pins_motor1[1], OUTPUT);
+  set_PWM_prescaler(pins_motor1[0], PRESCALER_TIMER2_3_11);
+  
+  pinMode(pins_motor2[0], OUTPUT);
+  pinMode(pins_motor2[1], OUTPUT);
+  set_PWM_prescaler(pins_motor2[0], PRESCALER_TIMER1_9_10);
 #endif
 }
 

@@ -1,4 +1,4 @@
-#include <stdint.h>
+
 /*
   Copyright 2017 by Dennis Cabell
   KE8FZX
@@ -37,9 +37,9 @@ My_RF24 radio(PIN_CE, PIN_CSN);
 
 RSSI rssi;
 
-#define RC_CHANNELS  16      // The maximum number of RC channels that can be sent in one packet
-#define MIN_RC_CHANNELS   4  // The minimum number of RC channels that must be included in a packet, the number of channels cannot be reduced any further than this
-#define RF_PAYLOAD_BYTES  24 // 12 bits per value * 16 channels
+#define RC_CHANNELS      16 // The maximum number of RC channels that can be sent in one packet
+#define MIN_RC_CHANNELS  4  // The minimum number of RC channels that must be included in a packet, the number of channels cannot be reduced any further than this
+#define PAYLOAD_BYTES    24 // 12 bits per value * 16 channels
 
 uint16_t rc_packet[RC_CHANNELS];
 
@@ -71,6 +71,44 @@ uint16_t rc_packet[RC_CHANNELS];
 #define DO_NOT_SOFT_REBIND             0xAA
 #define BOUND_WITH_FAILSAFE_NO_PULSES  0x99
 
+// Setup receiver, Bind reciever
+uint8_t currentModel = 0;
+uint64_t radioPipeID;
+uint64_t radioNormalRxPipeID;
+const int currentModelEEPROMAddress = 0;
+const int radioPipeEEPROMAddress = currentModelEEPROMAddress + sizeof(currentModel);
+const int softRebindFlagEEPROMAddress = radioPipeEEPROMAddress + sizeof(radioNormalRxPipeID);
+
+// Load fail safe default values
+const int failSafeChannelValuesEEPROMAddress = softRebindFlagEEPROMAddress + sizeof(uint8_t); // uint8_t is the sifr of the rebind flag
+
+// Output fail safe values
+uint16_t failSafeChannelValues[RC_CHANNELS];
+
+// Get packet
+uint32_t packetInterval = DEFAULT_PACKET_INTERVAL;
+bool packetMissed = false;
+bool failSafeMode = false;
+
+// Setup receiver
+uint8_t radioChannel[RF_CHANNELS];
+bool bindMode = false; // When true send bind command to cause receiver to bind enter bind mode
+volatile bool packetReady = false;
+bool failSafeNoPulses = false;
+
+// ADC Processing
+int16_t analogValue[2] = {0, 0};
+
+// Set next radio channel
+uint8_t currentChannel = MIN_RF_CHANNEL; // Initializes the channel sequence
+
+uint16_t initialTelemetrySkipPackets = 0;
+bool telemetryEnabled = false;
+
+uint8_t radioConfigRegisterForTX = 0;
+uint8_t radioConfigRegisterForRX_IRQ_Masked = 0;
+uint8_t radioConfigRegisterForRX_IRQ_On = 0;
+
 typedef struct
 {
   enum RxMode_t : uint8_t
@@ -87,47 +125,21 @@ typedef struct
   
   uint8_t reserved = 0; // Contains the channel number that the packet was sent on in bits 0-5
   
-  uint8_t option; // mask 0x0F    : Channel reduction.  The number of channels to not send (subtracted from the 16 max channels) at least 4 are always sent
-  //                 mask 0x40>>6 : Contains max power override flag for Multi-protocol TX module. Also sent to RX
+  uint8_t option; // mask 0x0F    : Channel reduction. The number of channels to not send (subtracted from the 16 max channels) at least 4 are always sent
+                  // mask 0x30>>4 : Receiver output mode
+                  //                0 (00) = Single PPM on individual pins for each channel
+                  //                1 (01) = SUM PPM on channel 1 pin
+                  //                2 (10) = SBUS output
+                  //                3 (11) = Unused
+                  // mask 0x40>>6 : Contains max power override flag for Multi-protocol TX module. Also sent to RX
+                  // mask 0x80>>7 : Unused
   
-  uint8_t  modelNum;
-  uint8_t  checkSum_LSB; // Checksum least significant byte
-  uint8_t  checkSum_MSB; // Checksum most significant byte
-  uint8_t  payloadValue[RF_PAYLOAD_BYTES] = {0}; // 12 bits per channel value, unsigned
+  uint8_t modelNum;
+  uint8_t checkSum_LSB; // Checksum least significant byte
+  uint8_t checkSum_MSB; // Checksum most significant byte
+  uint8_t payloadValue [PAYLOAD_BYTES] = {0}; // 12 bits per channel value, unsigned
 }
 RxTxPacket_t;
-
-uint8_t radioChannel[RF_CHANNELS];
-uint8_t currentChannel = MIN_RF_CHANNEL; // Initializes the channel sequence
-
-uint8_t radioConfigRegisterForTX = 0;
-uint8_t radioConfigRegisterForRX_IRQ_Masked = 0;
-uint8_t radioConfigRegisterForRX_IRQ_On = 0;
-
-bool bindMode = false; // When true send bind command to cause receiver to bind enter bind mode
-uint8_t currentModel = 0;
-uint64_t radioPipeID;
-uint64_t radioNormalRxPipeID;
-
-const int currentModelEEPROMAddress = 0;
-const int radioPipeEEPROMAddress = currentModelEEPROMAddress + sizeof(currentModel);
-const int softRebindFlagEEPROMAddress = radioPipeEEPROMAddress + sizeof(radioNormalRxPipeID);
-const int failSafeChannelValuesEEPROMAddress = softRebindFlagEEPROMAddress + sizeof(uint8_t); // uint8_t is the sifr of the rebind flag
-
-uint16_t failSafeChannelValues[RC_CHANNELS];
-
-bool failSafeMode = false;
-bool failSafeNoPulses = false;
-
-bool packetMissed = false;
-uint32_t packetInterval = DEFAULT_PACKET_INTERVAL;
-
-volatile bool packetReady = false;
-
-int16_t analogValue[2] = {0, 0};
-
-bool telemetryEnabled = false;
-uint16_t initialTelemetrySkipPackets = 0;
 
 void output_rc_channels();
 void ADC_Processing();

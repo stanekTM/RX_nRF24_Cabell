@@ -6,7 +6,7 @@ Servo servo[SERVO_CHANNELS]; // Class driver
 
 void servo_setup()
 {
-#if defined(SERVO_8CH) || defined(SERVO_7CH_MOTOR1) || defined(SERVO_7CH_MOTOR2) || defined(SERVO_6CH_MOTOR1_2)
+#if defined(SERVO_12CH) || defined(SERVO_10CH_MOTOR1) || defined(SERVO_8CH_MOTOR1_2PB)
   for (byte i = 0; i < SERVO_CHANNELS; i++)
   {
     servo[i].attach(pins_servo[i]);
@@ -19,31 +19,24 @@ void servo_setup()
 //*********************************************************************************************************************
 void servo_control()
 {
-#if defined(SERVO_8CH)
+#if defined(SERVO_12CH)
   for (byte i = 0; i < SERVO_CHANNELS; i++)
   {
     servo[i].writeMicroseconds(rc_packet[i]);
   }
 #endif
 
-#if defined(SERVO_7CH_MOTOR1)
+#if defined(SERVO_10CH_MOTOR1)
   for (byte i = 0; i < SERVO_CHANNELS; i++)
   {
-    servo[i].writeMicroseconds(rc_packet[i + MOTOR_CHANNELS]);
+    servo[i].writeMicroseconds(rc_packet[i + 1]);
   }
 #endif
 
-#if defined(SERVO_7CH_MOTOR2)
+#if defined(SERVO_8CH_MOTOR1_2PB)
   for (byte i = 0; i < SERVO_CHANNELS; i++)
   {
-    servo[i].writeMicroseconds(rc_packet[i + MOTOR_CHANNELS]);
-  }
-#endif
-
-#if defined(SERVO_6CH_MOTOR1_2)
-  for (byte i = 0; i < SERVO_CHANNELS; i++)
-  {
-    servo[i].writeMicroseconds(rc_packet[i + MOTOR_CHANNELS]);
+    servo[i].writeMicroseconds(rc_packet[i + 2]);
   }
 #endif
 }

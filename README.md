@@ -7,24 +7,30 @@ The motor driver IC is based on MX1208, MX1508, MX1515, MX1616, MX1919 and other
 
 ### Works with RC transmitters
 [**OpenAVRc**](https://github.com/Ingwie/OpenAVRc_Dev)
-and [**Multiprotocol**](https://github.com/pascallanger/DIY-Multiprotocol-TX-Module)
+and [**Multiprotocol TX**](https://github.com/pascallanger/DIY-Multiprotocol-TX-Module)
 
-I recommend reducing the number of channels as much as possible based on what your model requires.
-Fewer channels will use a smaller packet size, which improves transmission reliability (fewer bytes sent means less opportunity for errors).
-
-In the file "Config.h", uncomment (define) only one output option that combines motors, servos and pins.
+### RC receiver configuration manual in the "Config.h" file
+* Servo and motor output selection
+* Setting the number of servo channels
+* Setting the PWM prescaler according to the requirements and limitations of the timers/counters. Details in the "PWM" file
+* Setting the motor reaction point. Prevents initial rotor magnetic resistance
+* Setting the maximum motor power. Suitable for RC transmitters without endpoint setting
+* Brake setting
 
 ### Arduino pins
 ```
-D2  - servo 1
-D3  - servo 2 - motor 1/1
-D4  - servo 3
-D5  - servo 4 - motor 2/1
-D6  - servo 5 - motor 2/2
-D7  - servo 6
-D8  - servo 7
-D9  - servo 8
-D11           - motor 1/2
+D0  - servo 1  (1) (1)
+D1  - servo 2  (2) motor 2/1 ATmega328PB only!
+D2  - servo 3  (3) motor 2/2 ATmega328PB only!
+D3  - servo 4  motor 1/1
+D4  - servo 5  (4) (2)
+D5  - servo 6  (5) (3)
+D6  - servo 7  (6) (4)
+D7  - servo 8  (7) (5)
+D8  - servo 9  (8) (6)
+D9  - servo 10 (9) (7) motor 2/1
+D10 - servo 11 (10)(8) motor 2/2
+D11 - servo 12 motor 1/2
 
 D12 - bind button
 D13 - LED
@@ -32,15 +38,15 @@ D13 - LED
 A6 - telemetry analog input A1
 A7 - telemetry analog input A2
 
-nRF24L01:
+nRF24L01+
 A0 - CE
 A1 - CSN
+A5 - IRQ
+software SPI
 A2 - SCK
 A3 - MOSI
 A4 - MISO
-A5 - IRQ
 ```
-
 ### The Protocol
 The protocol used is named CABELL_V3 (the third version, but the first version publicly released). It is a FHSS protocol using the NRF24L01+ 2.4 GHz transceiver. 45 channels are used from 2.403 through 2.447 GHz. The reason for using 45 channels is to keep operation within the overlap area between the 2.4 GHz ISM band (governed in the USA by FCC part 15) and the HAM portion of the band (governed in the USA by FCC part 97). This allows part 15 compliant use of the protocol, while allowing licensed amateur radio operators to operate under the less restrictive part 97 rules if desired.
 
