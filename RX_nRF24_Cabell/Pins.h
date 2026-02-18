@@ -6,9 +6,9 @@
 #include "Config.h"
 
 // ATmega328P/PB pins overview
-// PD0 - D0   PWM  328PB
-// PD1 - D1   PWM  328PB
-// PD2 - D2   PWM  328PB
+// PD0 - D0   PWM  ATmega328P
+// PD1 - D1   PWM  ATmega328P
+// PD2 - D2   PWM  ATmega328P
 // PD3 - D3   PWM
 // PD4 - D4
 // PD5 - D5   PWM
@@ -29,10 +29,10 @@
 // PB6 - D20        XTAL1
 // PB7 - D21        XTAL2
 // PC6 - D22        RESET
-// PE0 - D23        328PB
-// PE1 - D24        328PB
-// PE2 - D25 / A6   328PB
-// PE3 - D26 / A7   328PB
+// PE0 - D23        ATmega328P
+// PE1 - D24        ATmega328P
+// PE2 - D25 / A6   ATmega328P
+// PE3 - D26 / A7   ATmega328P
 // ADC6   -    A6
 // ADC7   -    A7
 
@@ -75,8 +75,8 @@
 #define PIN_BUTTON_BIND       12
 #define PIN_LED               13
 
-#define PIN_RX_BATT_A1        A6
-#define PIN_RX_BATT_A2        A7
+#define PIN_RX_BATT_A1        6 // A6
+#define PIN_RX_BATT_A2        7 // A7
 
 // Pins for nRF24L01+
 #define PIN_CE                A0

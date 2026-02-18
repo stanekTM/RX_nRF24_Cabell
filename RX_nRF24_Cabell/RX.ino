@@ -114,13 +114,13 @@ void setupReciever()
 //*********************************************************************************************************************
 // ISR
 //*********************************************************************************************************************
-  ISR(PCINT1_vect)
+ISR(PCINT1_vect)
+{
+  if (IS_RADIO_IRQ_on)
   {
-    if (IS_RADIO_IRQ_on)
-    {
-      packetReady = true; // Pulled low when packet is received
-    }
+    packetReady = true; // Pulled low when packet is received
   }
+}
 
 //*********************************************************************************************************************
 // Set next radio channel
@@ -674,8 +674,9 @@ unsigned long sendTelemetryPacket()
 {
   static int8_t packetCounter = 0; // This is only used for toggling bit
   uint8_t sendPacket[4] = {RxTxPacket_t :: RxMode_t :: telemetryResponse};
- 
+  
   packetCounter++;
+  
   sendPacket[0] &= 0x7F;               // Clear 8th bit
   sendPacket[0] |= packetCounter << 7; // This causes the 8th bit of the first byte to toggle with each xmit so consecutive payloads are not identical. This is a work around for a reported bug in clone NRF24L01 chips that mis-took this case for a re-transmit of the same packet.
   sendPacket[1]  = rssi.getRSSI();
