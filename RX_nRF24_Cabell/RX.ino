@@ -36,30 +36,23 @@ void output_rc_channels()
 }
 
 //*********************************************************************************************************************
-// Reads ADC value then configures next conversion. Alternates between pins A6 and A7
-// based on ADC Interrupt example from https://www.gammon.com.au/adc
+// Battery voltage monitoring
 //*********************************************************************************************************************
-void ADC_Processing()
+void batt_monitoring()
 {
-  static byte adcPin = PIN_RX_BATT_A1;
-  
-  if (bit_is_clear(ADCSRA, ADSC))
+  if (millis() - adc_time > 1000) // Battery reading delay
   {
-    analogValue[(adcPin == PIN_RX_BATT_A1) ? 0 : 1] = ADC;
+    adc_time = millis();
     
-    adcPin = (adcPin == PIN_RX_BATT_A2) ? PIN_RX_BATT_A1 : PIN_RX_BATT_A2; // Choose next pin to read
-    
-    ADCSRA  = bit (ADEN);                              // Turn ADC on
-    ADCSRA |= bit (ADPS0) | bit (ADPS1) | bit (ADPS2); // Pre-scaler of 128
-    ADMUX   = bit (REFS0) | (adcPin & 0x07);           // AVcc and select input port
-    ADCSRA |= bit (ADSC);                              // Start next conversion
+    analogValue[0] = map(analogRead(PIN_RX_BATT_A1), 0, 1023, 0, 255);
+    analogValue[1] = map(analogRead(PIN_RX_BATT_A2), 0, 1023, 0, 255);
   }
 }
 
 //*********************************************************************************************************************
-// Setup receiver
+// Radio setup
 //*********************************************************************************************************************
-void setupReciever()
+void radio_setup()
 {
   uint8_t softRebindFlag;
   
@@ -93,7 +86,7 @@ void setupReciever()
   RADIO_IRQ_SET_INPUT;
   RADIO_IRQ_SET_PULLUP;
   
-  initializeRadio();
+  radio_init();
   
   setTelemetryPowerMode(OPTION_MASK_MAX_RF_POWER_OVERRIDE);
   
@@ -112,20 +105,9 @@ void setupReciever()
 }
 
 //*********************************************************************************************************************
-// ISR
-//*********************************************************************************************************************
-ISR(PCINT1_vect)
-{
-  if (IS_RADIO_IRQ_on)
-  {
-    packetReady = true; // Pulled low when packet is received
-  }
-}
-
-//*********************************************************************************************************************
 // Set next radio channel
 //*********************************************************************************************************************
-void setNextRadioChannel(bool missedPacket)
+void setNextRadioChannel(bool)
 {
   radio.write_register(NRF_CONFIG, radioConfigRegisterForTX); // This is in place of stop listening to make the change to TX more quickly. Also sets all interrupts to mask
   radio.flush_rx();
@@ -311,7 +293,7 @@ bool getPacket()
 //*********************************************************************************************************************
 // Check fail safe disarm timeout
 //*********************************************************************************************************************
-void checkFailsafeDisarmTimeout(unsigned long lastPacketTime, bool inititalGoodPacketRecieved)
+void checkFailsafeDisarmTimeout(unsigned long lastPacketTime, bool)
 {
   unsigned long holdMicros = micros();
   
@@ -330,7 +312,7 @@ void outputFailSafeValues(bool callOutputChannels)
   
   for (byte i = 0; i < RC_CHANNELS; i++)
   {
-    rc_packet[i] = failSafeChannelValues[i];
+    rc_channel[i] = failSafeChannelValues[i];
   }
   
   if (!failSafeMode)
@@ -372,7 +354,7 @@ void unbindReciever()
 //*********************************************************************************************************************
 // Bind reciever
 //*********************************************************************************************************************
-void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], RxTxPacket_t :: RxMode_t RxMode)
+void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], uint8_t RxMode)
 {
   // New radio address is in channels 11 to 15
   uint64_t newRadioPipeID = (((uint64_t)(tempHoldValues[11] - 1000)) << 32) +
@@ -460,17 +442,17 @@ void setFailSafeValues(uint16_t newFailsafeValues[])
 //*********************************************************************************************************************
 // Validate checksum
 //*********************************************************************************************************************
-bool validateChecksum(RxTxPacket_t const& packet, uint8_t maxPayloadValueIndex)
+bool validateChecksum(const RxTxPacket_t &rc_packet, uint8_t max_rc_packet_size)
 {
   // Caculate checksum and validate
-  uint16_t packetSum = packet.modelNum + packet.option + packet.RxMode + packet.reserved;
+  uint16_t packetSum = rc_packet.modelNum + rc_packet.option + rc_packet.RxMode + rc_packet.reserved;
   
-  for (byte i = 0; i < maxPayloadValueIndex; i++)
+  for (byte i = 0; i < max_rc_packet_size; i++)
   {
-    packetSum = packetSum + packet.payloadValue[i];
+    packetSum = packetSum + rc_packet.payloadValue[i];
   }
   
-  if (packetSum != ((((uint16_t)packet.checkSum_MSB) << 8) + (uint16_t)packet.checkSum_LSB))
+  if (packetSum != ((((uint16_t)rc_packet.checkSum_MSB) << 8) + (uint16_t)rc_packet.checkSum_LSB))
   {
     return false; // Don't take packet if checksum bad
   }
@@ -485,11 +467,11 @@ bool validateChecksum(RxTxPacket_t const& packet, uint8_t maxPayloadValueIndex)
 //*********************************************************************************************************************
 bool readAndProcessPacket()
 {
-  RxTxPacket_t RxPacket;
+  RxTxPacket_t rc_packet;
   
-  radio.read(&RxPacket, sizeof(RxPacket));
+  radio.read(&rc_packet, sizeof(rc_packet));
   
-  int tx_channel = RxPacket.reserved & RESERVED_MASK_RF_CHANNEL;
+  int tx_channel = rc_packet.reserved & RESERVED_MASK_RF_CHANNEL;
   
   if (tx_channel != 0)
   {
@@ -502,21 +484,21 @@ bool readAndProcessPacket()
   
   // Remove 8th bit from RxMode because this is a toggle bit that is not included in the checksum
   // This toggle with each xmit so consecutive payloads are not identical. This is a work around for a reported bug in clone NRF24L01 chips that mis-took this case for a re-transmit of the same packet.
-  uint8_t* p = reinterpret_cast<uint8_t*>(&RxPacket.RxMode);
+  uint8_t* p = reinterpret_cast<uint8_t*>(&rc_packet.RxMode);
   *p &= 0x7F; // Ensure 8th bit is not set. This bit is not included in checksum
   
   // Putting this after setNextRadioChannel will lag by one telemetry packet, but by doing this the telemetry can be sent sooner, improving the timing
-  telemetryEnabled = (RxPacket.RxMode == RxTxPacket_t :: RxMode_t :: normalWithTelemetry) ? true : false;
+  telemetryEnabled = (rc_packet.RxMode == RxTxPacket_t :: RxMode_t :: normalWithTelemetry) ? true : false;
   
-  uint8_t channelReduction = constrain((RxPacket.option & OPTION_MASK_RF_CHANNEL_REDUCTION), 0, RC_CHANNELS - MIN_RC_CHANNELS); // Must be at least 4 channels, so cap at 12
-  uint8_t packetSize = sizeof(RxPacket) - ((((channelReduction - (channelReduction % 2)) / 2)) * 3); // Reduce 3 bytes per 2 channels, but not last channel if it is odd
-  uint8_t maxPayloadValueIndex = sizeof(RxPacket.payloadValue) - (sizeof(RxPacket) - packetSize);
+  uint8_t channelReduction = constrain((rc_packet.option & OPTION_MASK_RF_CHANNEL_REDUCTION), 0, RC_CHANNELS - MIN_RC_CHANNELS); // Must be at least 4 channels, so cap at 12
+  uint8_t rc_packet_size = sizeof(rc_packet) - ((((channelReduction - (channelReduction % 2)) / 2)) * 3); // Reduce 3 bytes per 2 channels, but not last channel if it is odd
+  uint8_t max_rc_packet_size = sizeof(rc_packet.payloadValue) - (sizeof(rc_packet) - rc_packet_size);
   uint8_t channelsRecieved = RC_CHANNELS - channelReduction;
   
   // Putting this after setNextRadioChannel will lag by one telemetry packet, but by doing this the telemetry can be sent sooner, improving the timing
   if (telemetryEnabled)
   {
-    setTelemetryPowerMode(RxPacket.option);
+    setTelemetryPowerMode(rc_packet.option);
     packetInterval = DEFAULT_PACKET_INTERVAL + (constrain(((int16_t)channelsRecieved - (int16_t)6), (int16_t)0, (int16_t)10) * (int16_t)100); // Increase packet period by 100 us for each channel over 6
   }
   else
@@ -526,16 +508,16 @@ bool readAndProcessPacket()
   
   bool packet_rx = false;
   
-  packet_rx = validateChecksum(RxPacket, maxPayloadValueIndex);
+  packet_rx = validateChecksum(rc_packet, max_rc_packet_size);
   
   uint16_t tempHoldValues[RC_CHANNELS];
   
   if (packet_rx)
   {
-    packet_rx = decodeChannelValues(RxPacket, channelsRecieved, tempHoldValues);
+    packet_rx = decodeChannelValues(rc_packet, channelsRecieved, tempHoldValues);
     
     // If bind or unbind happens, this will never return
-    packet_rx = processRxMode(RxPacket.RxMode, RxPacket.modelNum, tempHoldValues);
+    packet_rx = processRxMode(rc_packet.RxMode, rc_packet.modelNum, tempHoldValues);
   }
   
   // If packet is good, copy the channel values
@@ -543,7 +525,7 @@ bool readAndProcessPacket()
   {
     for (byte i = 0; i < RC_CHANNELS; i++)
     {
-      rc_packet[i] = (i < channelsRecieved) ? tempHoldValues[i] : MID_CONTROL_VAL; // Use the mid value for channels not received
+      rc_channel[i] = (i < channelsRecieved) ? tempHoldValues[i] : MID_CONTROL_VAL; // Use the mid value for channels not received
     }
   }
   
@@ -634,7 +616,7 @@ bool processRxMode(uint8_t RxMode, uint8_t modelNum, uint16_t tempHoldValues[])
 //*********************************************************************************************************************
 // Decode channel values
 //*********************************************************************************************************************
-bool decodeChannelValues(RxTxPacket_t const& RxPacket, uint8_t channelsRecieved, uint16_t tempHoldValues[])
+bool decodeChannelValues(const RxTxPacket_t &rc_packet, uint8_t channelsRecieved, uint16_t tempHoldValues[])
 {
   bool packet_rx = true;
   int payloadIndex = 0;
@@ -642,9 +624,9 @@ bool decodeChannelValues(RxTxPacket_t const& RxPacket, uint8_t channelsRecieved,
   // Decode the 12 bit numbers to temp array
   for (byte i = 0; i < channelsRecieved; i++)
   {
-    tempHoldValues[i]  = RxPacket.payloadValue[payloadIndex];
+    tempHoldValues[i]  = rc_packet.payloadValue[payloadIndex];
     payloadIndex++;
-    tempHoldValues[i] |= ((uint16_t)RxPacket.payloadValue[payloadIndex]) << 8;
+    tempHoldValues[i] |= ((uint16_t)rc_packet.payloadValue[payloadIndex]) << 8;
     
     // Channel number is ODD
     if (i % 2)
@@ -672,20 +654,20 @@ bool decodeChannelValues(RxTxPacket_t const& RxPacket, uint8_t channelsRecieved,
 //*********************************************************************************************************************
 unsigned long sendTelemetryPacket()
 {
-  static int8_t packetCounter = 0; // This is only used for toggling bit
-  uint8_t sendPacket[4] = {RxTxPacket_t :: RxMode_t :: telemetryResponse};
+  static int8_t packet_counter = 0; // This is only used for toggling bit
+  uint8_t telemetry_packet[4] = {RxTxPacket_t :: RxMode_t :: telemetryResponse};
   
-  packetCounter++;
+  packet_counter++;
   
-  sendPacket[0] &= 0x7F;               // Clear 8th bit
-  sendPacket[0] |= packetCounter << 7; // This causes the 8th bit of the first byte to toggle with each xmit so consecutive payloads are not identical. This is a work around for a reported bug in clone NRF24L01 chips that mis-took this case for a re-transmit of the same packet.
-  sendPacket[1]  = rssi.getRSSI();
-  sendPacket[2]  = analogValue[0] / 4; // Send a 8 bit value (0 to 255) of the analog input. Can be used for LiPo voltage or other analog input for telemetry
-  sendPacket[3]  = analogValue[1] / 4; // Send a 8 bit value (0 to 255) of the analog input. Can be used for LiPo voltage or other analog input for telemetry
+  telemetry_packet[0] &= 0x7F;               // Clear 8th bit
+  telemetry_packet[0] |= packet_counter << 7; // This causes the 8th bit of the first byte to toggle with each xmit so consecutive payloads are not identical. This is a work around for a reported bug in clone NRF24L01 chips that mis-took this case for a re-transmit of the same packet.
+  telemetry_packet[1]  = rssi.getRSSI();
+  telemetry_packet[2]  = analogValue[0]; // Send a 8 bit value (0 to 255) of the analog input. Can be used for LiPo voltage or other analog input for telemetry
+  telemetry_packet[3]  = analogValue[1]; // Send a 8 bit value (0 to 255) of the analog input. Can be used for LiPo voltage or other analog input for telemetry
   
-  uint8_t packetSize = sizeof(sendPacket);
+  uint8_t telemetry_packet_size = sizeof(telemetry_packet);
   
-  radio.startFastWrite(&sendPacket[0], packetSize, 0);
+  radio.startFastWrite(&telemetry_packet[0], telemetry_packet_size, 0);
   
   // Calculate transmit time based on packet size and data rate of 1MB per sec
   // This is done because polling the status register during xmit to see when xmit is done causes issues sometimes.
@@ -693,7 +675,7 @@ unsigned long sendTelemetryPacket()
   // at 250 kbps per sec, one bit is 4 uS
   // then add 140 uS which is 130 uS to begin the xmit and 10 uS fudge factor
   // Add this to micros() to return when the transmit is expected to be complete
-  return micros() + (((((unsigned long)packetSize * 8ul)  +  73ul) * 4ul) + 140ul);
+  return micros() + (((((unsigned long)telemetry_packet_size * 8ul)  +  73ul) * 4ul) + 140ul);
 }
 
 //*********************************************************************************************************************
@@ -753,9 +735,9 @@ void setTelemetryPowerMode(uint8_t option)
 }
 
 //*********************************************************************************************************************
-// Initialize radio
+// Radio init
 //*********************************************************************************************************************
-void initializeRadio()
+void radio_init()
 {
   radio.maskIRQ(true, true, true);     // Mask all interrupts. RX interrupt (the only one we use) gets turned on after channel change
   radio.enableDynamicPayloads();
@@ -776,5 +758,16 @@ void initializeRadio()
   radio.maskIRQ(true, true, false);
   radioConfigRegisterForRX_IRQ_On = radio.read_register(NRF_CONFIG);     // This saves the config register state with Read Interrupt ON and in RX mode. Used to switch radio quickly to RX after channel change
   radio.maskIRQ(true, true, true);
+}
+
+//*********************************************************************************************************************
+// ISR
+//*********************************************************************************************************************
+ISR(PCINT1_vect)
+{
+  if (IS_RADIO_IRQ_on)
+  {
+    packetReady = true; // Pulled low when packet is received
+  }
 }
  

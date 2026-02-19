@@ -49,24 +49,17 @@ void setup(void)
 {
   //Serial.begin(9600);
   
+  radio_setup();
   servo_setup();
   motor_setup();
   
   pinMode(PIN_BUTTON_BIND, INPUT_PULLUP);
   
+  pinMode(PIN_RX_BATT_A1, INPUT);
+  pinMode(PIN_RX_BATT_A2, INPUT);
+  
   pinMode(PIN_LED, OUTPUT);
   digitalWrite(PIN_LED, LOW);
-  
-  // Initial analog reads for A6/A7. Initial call returns bad value so call 3 times to get a good starting value from each pin
-  ADC_Processing();
-  // Wait for conversion
-  while (!bit_is_clear(ADCSRA, ADSC));
-  ADC_Processing();
-  // Wait for conversion
-  while (!bit_is_clear(ADCSRA, ADSC));
-  ADC_Processing();
-  
-  setupReciever();
 }
 
 //*********************************************************************************************************************
@@ -82,7 +75,7 @@ void loop()
       output_rc_channels();
     }
     
-    ADC_Processing(); // Process ADC to asynchronously read A6/A7 for telemetry analog values. Non-blocking read
+    batt_monitoring();
   }
 }
  

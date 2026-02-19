@@ -75,8 +75,8 @@
 #define PIN_BUTTON_BIND       12
 #define PIN_LED               13
 
-#define PIN_RX_BATT_A1        6 // A6
-#define PIN_RX_BATT_A2        7 // A7
+#define PIN_RX_BATT_A1        A6
+#define PIN_RX_BATT_A2        A7
 
 // Pins for nRF24L01+
 #define PIN_CE                A0

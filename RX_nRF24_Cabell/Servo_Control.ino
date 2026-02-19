@@ -22,21 +22,21 @@ void servo_control()
 #if defined(SERVO_12CH)
   for (byte i = 0; i < SERVO_CHANNELS; i++)
   {
-    servo[i].writeMicroseconds(rc_packet[i]);
+    servo[i].writeMicroseconds(rc_channel[i]);
   }
 #endif
 
 #if defined(SERVO_10CH_MOTOR1)
   for (byte i = 0; i < SERVO_CHANNELS; i++)
   {
-    servo[i].writeMicroseconds(rc_packet[i + 1]);
+    servo[i].writeMicroseconds(rc_channel[i + 1]);
   }
 #endif
 
 #if defined(SERVO_8CH_MOTOR1_2PB)
   for (byte i = 0; i < SERVO_CHANNELS; i++)
   {
-    servo[i].writeMicroseconds(rc_packet[i + 2]);
+    servo[i].writeMicroseconds(rc_channel[i + 2]);
   }
 #endif
 }

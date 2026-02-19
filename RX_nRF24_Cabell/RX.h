@@ -41,7 +41,7 @@ RSSI rssi;
 #define MIN_RC_CHANNELS  4  // The minimum number of RC channels that must be included in a packet, the number of channels cannot be reduced any further than this
 #define PAYLOAD_BYTES    24 // 12 bits per value * 16 channels
 
-uint16_t rc_packet[RC_CHANNELS];
+uint16_t rc_channel[RC_CHANNELS];
 
 #define MIN_CONTROL_VAL  1000
 #define MID_CONTROL_VAL  1500
@@ -71,7 +71,7 @@ uint16_t rc_packet[RC_CHANNELS];
 #define DO_NOT_SOFT_REBIND             0xAA
 #define BOUND_WITH_FAILSAFE_NO_PULSES  0x99
 
-// Setup receiver, Bind reciever
+// Radio setup, Bind reciever
 uint8_t currentModel = 0;
 uint64_t radioPipeID;
 uint64_t radioNormalRxPipeID;
@@ -90,13 +90,14 @@ uint32_t packetInterval = DEFAULT_PACKET_INTERVAL;
 bool packetMissed = false;
 bool failSafeMode = false;
 
-// Setup receiver
+// Radio setup
 uint8_t radioChannel[RF_CHANNELS];
 bool bindMode = false; // When true send bind command to cause receiver to bind enter bind mode
 volatile bool packetReady = false;
 bool failSafeNoPulses = false;
 
-// ADC Processing
+// Battery voltage monitoring
+unsigned long adc_time = 0;
 int16_t analogValue[2] = {0, 0};
 
 // Set next radio channel
@@ -142,25 +143,25 @@ typedef struct
 RxTxPacket_t;
 
 void output_rc_channels();
-void ADC_Processing();
-void setupReciever();
-void setNextRadioChannel(bool missedPacket);
+void batt_monitoring();
+void radio_setup();
+void setNextRadioChannel(bool);
 bool getPacket();
-void checkFailsafeDisarmTimeout(unsigned long lastPacketTime, bool inititalGoodPacketRecieved);
+void checkFailsafeDisarmTimeout(unsigned long lastPacketTime, bool);
 void outputFailSafeValues(bool callOutputChannels);
 void unbindReciever();
-void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], RxTxPacket_t :: RxMode_t RxMode);
+void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], uint8_t RxMode);
 void setFailSafeDefaultValues();
 void loadFailSafeDefaultValues();
 void setFailSafeValues(uint16_t newFailsafeValues[]);
-bool validateChecksum(RxTxPacket_t const& packet, uint8_t maxPayloadValueIndex);
+bool validateChecksum(const RxTxPacket_t &rc_packet, uint8_t max_rc_packet_size);
 bool readAndProcessPacket();
 bool processRxMode(uint8_t RxMode, uint8_t modelNum, uint16_t tempHoldValues[]);
-bool decodeChannelValues(RxTxPacket_t const& RxPacket, uint8_t channelsRecieved, uint16_t tempHoldValues[]);
+bool decodeChannelValues(const RxTxPacket_t &rc_packet, uint8_t channelsRecieved, uint16_t tempHoldValues[]);
 unsigned long sendTelemetryPacket(); // Returns micros of when the transmit is expected to be complete
 bool failSafeButtonHeld();
 void setTelemetryPowerMode(uint8_t option);
-void initializeRadio();
+void radio_init();
 
 #endif // End __RX_h__
  
