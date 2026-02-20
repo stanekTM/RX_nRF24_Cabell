@@ -347,7 +347,7 @@ void unbindReciever()
   {
     digitalWrite(PIN_LED, ledState);
     ledState = !ledState;
-    delay(100);
+    delay(200);
   }  
 }
 
@@ -389,7 +389,7 @@ void bindReciever(uint8_t modelNum, uint16_t tempHoldValues[], uint8_t RxMode)
     {
       digitalWrite(PIN_LED, ledState);
       ledState = !ledState;
-      delay(1000);
+      delay(900);
     }
   }
 }
@@ -553,60 +553,56 @@ bool processRxMode(uint8_t RxMode, uint8_t modelNum, uint16_t tempHoldValues[])
   {
     case RxTxPacket_t :: RxMode_t :: bindFalesafeNoPulse :
     case RxTxPacket_t :: RxMode_t :: bind :
-    
-    if (bindMode)
-    {
-      bindReciever(modelNum, tempHoldValues, RxMode);
-    }
-    else
-    {
-      packet_rx = false;
-    }
+      if (bindMode)
+      {
+        bindReciever(modelNum, tempHoldValues, RxMode);
+      }
+      else
+      {
+        packet_rx = false;
+      }
     break;
     
     case RxTxPacket_t :: RxMode_t :: setFailSafe :
-    
-    if (modelNum == currentModel)
-    {
-      digitalWrite(PIN_LED, HIGH);
-      
-      // Only set the values first time through
-      if (!failSafeValuesHaveBeenSet)
+      if (modelNum == currentModel)
       {
-        failSafeValuesHaveBeenSet = true;
-        setFailSafeValues(tempHoldValues);
+        digitalWrite(PIN_LED, HIGH);
+        
+        // Only set the values first time through
+        if (!failSafeValuesHaveBeenSet)
+        {
+          failSafeValuesHaveBeenSet = true;
+          setFailSafeValues(tempHoldValues);
+        }
       }
-    }
-    else
-    {
-      packet_rx = false;
-    }
+      else
+      {
+        packet_rx = false;
+      }
     break;
     
     case RxTxPacket_t :: RxMode_t :: normalWithTelemetry :
     case RxTxPacket_t :: RxMode_t :: normal :
-    
-    if (modelNum == currentModel)
-    {
-      digitalWrite(PIN_LED, LOW);
-      failSafeValuesHaveBeenSet = false; // Reset when not in setFailSafe mode so next time failsafe is to be set it will take
-    }
-    else
-    {
-      packet_rx = false;
-    }
+      if (modelNum == currentModel)
+      {
+        digitalWrite(PIN_LED, LOW);
+        failSafeValuesHaveBeenSet = false; // Reset when not in setFailSafe mode so next time failsafe is to be set it will take
+      }
+      else
+      {
+        packet_rx = false;
+      }
     break;
     
     case RxTxPacket_t :: RxMode_t :: unBind :
-    
-    if (modelNum == currentModel)
-    {
-      unbindReciever();
-    }
-    else
-    {
-      packet_rx = false;
-    }
+      if (modelNum == currentModel)
+      {
+        unbindReciever();
+      }
+      else
+      {
+        packet_rx = false;
+      }
     break;
   }
   
