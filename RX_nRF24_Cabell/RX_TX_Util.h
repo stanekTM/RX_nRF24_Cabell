@@ -24,13 +24,13 @@
   along with RC_RX_CABELL_V3_FHSS.  If not, see http://www.gnu.org/licenses.
 */
 
-#ifndef __RX_TX_UTIL_h__
-#define __RX_TX_UTIL_h__
+#ifndef __RX_TX_Util_h__
+#define __RX_TX_Util_h__
 
 #include <Arduino.h>
 
 void getChannelSequence (uint8_t outArray[], uint8_t numChannels, uint64_t permutation);
 uint8_t getNextChannel (uint8_t seqArray[], uint8_t seqArraySize, uint8_t prevChannel);
 
-#endif // End __RX_TX_UTIL_h__
+#endif // End __RX_TX_Util_h__
  
